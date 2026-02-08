@@ -92,14 +92,14 @@ PAGE_LIMIT: ${pageLimit}
 RESUME_STYLE: ${style}
 SELECTED_SECTIONS: ${selectedSections.join(', ')}
 
-Generate a professional resume in JSON format.
+Generate a professional resume based ONLY on facts in the input. Return valid JSON.
   `;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
-      systemInstruction: "You are a professional resume generator. Extract factual info, rewrite for clarity, and return valid JSON strictly following the schema. Do not invent info.",
+      systemInstruction: "You are a world-class professional resume generator. Extract factual info, improve clarity, and return valid JSON. No commentary.",
       responseMimeType: "application/json",
       responseSchema: RESUME_SCHEMA,
       maxOutputTokens: 20000,
@@ -107,7 +107,7 @@ Generate a professional resume in JSON format.
     },
   });
 
-  if (!response.text) throw new Error("No response from Gemini");
+  if (!response.text) throw new Error("API Response empty");
   return JSON.parse(response.text);
 };
 
@@ -115,7 +115,7 @@ export const createCareerChat = () => {
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {
-      systemInstruction: 'You are a professional career consultant. Help users with resume structure and clarity.',
+      systemInstruction: 'You are a career consultant assistant. Help users structure their experience.',
     },
   });
 };
