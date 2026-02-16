@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { generateResume } from './geminiService';
 import { ResumeStyle, ResumeData } from './types';
 import InputForm from './components/InputForm';
@@ -17,7 +17,9 @@ const App: React.FC = () => {
   ]);
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const resumeRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -38,6 +40,34 @@ const App: React.FC = () => {
       setError('Failed to generate resume. Please check your connection or input and try again.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!resumeRef.current || !resumeData || isDownloading) return;
+    
+    setIsDownloading(true);
+    try {
+      // @ts-ignore
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const element = resumeRef.current;
+      const fileName = `${resumeData.sections.contact.name?.replace(/\s+/g, '_') || 'Resume'}.pdf`;
+      
+      const opt = {
+        margin: 0,
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().from(element).set(opt).save();
+    } catch (err) {
+      console.error("PDF download failed", err);
+      setError("Failed to download PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -93,15 +123,22 @@ const App: React.FC = () => {
                     <div className="flex justify-between items-center mb-6 no-print">
                       <h3 className="text-lg font-semibold text-gray-500">Preview</h3>
                       <button 
-                        onClick={() => window.print()}
-                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition flex items-center gap-2"
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center gap-2 shadow-lg shadow-blue-100 disabled:bg-blue-400"
                       >
-                        <i className="fas fa-print"></i>
-                        Print / Save PDF
+                        {isDownloading ? (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                          <i className="fas fa-download"></i>
+                        )}
+                        {isDownloading ? 'Preparing PDF...' : 'Download PDF'}
                       </button>
                     </div>
                     <div className="shadow-2xl mx-auto bg-white ring-1 ring-gray-200">
-                      <ResumePreview data={resumeData} style={resumeStyle} />
+                      <div ref={resumeRef}>
+                        <ResumePreview data={resumeData} style={resumeStyle} />
+                      </div>
                     </div>
                   </div>
                 </div>

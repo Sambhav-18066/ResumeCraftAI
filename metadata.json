@@ -1,8 +1,5 @@
 {
   "name": "ResumeCraft AI - Professional Resume Generator",
   "description": "A world-class AI-powered tool that transforms raw text into clean, well-written, and professionally structured resumes using Gemini 3 Pro Intelligence.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
+  "requestFramePermissions": []
 }
