@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createCareerChat } from '../geminiService';
+import { sendChatMessage } from '../geminiService';
 import { ChatMessage } from '../types';
-import { Chat } from '@google/genai';
 
 const ChatBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,30 +10,31 @@ const ChatBot: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const chatRef = useRef<Chat | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatRef.current = createCareerChat();
-  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSend = async () => {
-    if (!input.trim() || !chatRef.current || isLoading) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = input;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    const newMessages = [...messages, { role: 'user', text: userMessage } as ChatMessage];
+    setMessages(newMessages);
     setIsLoading(true);
 
     try {
-      const response = await chatRef.current.sendMessage({ message: userMessage });
-      const text = response.text || "I couldn't generate a response. Please try again.";
+      // Map history for API
+      const history = newMessages.slice(0, -1).map(m => ({
+        role: m.role,
+        parts: [{ text: m.text }]
+      }));
+
+      const text = await sendChatMessage(userMessage, history);
       setMessages(prev => [...prev, { role: 'model', text }]);
     } catch (err) {
       console.error(err);
