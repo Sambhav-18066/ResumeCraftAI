@@ -11,8 +11,9 @@ export default async function handler(req, res) {
   const { contents, systemInstruction, responseMimeType, responseSchema, maxOutputTokens, thinkingBudget } = req.body;
 
   try {
+    // Switching to gemini-3-flash-preview for better availability and higher rate limits on free tier
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: contents,
       config: {
         systemInstruction,
@@ -26,6 +27,8 @@ export default async function handler(req, res) {
     res.status(200).json({ text: response.text });
   } catch (error) {
     console.error("Gemini API Error:", error);
-    res.status(500).json({ error: error.message });
+    // Return specific status if it's a quota issue
+    const statusCode = error.status === 429 ? 429 : 500;
+    res.status(statusCode).json({ error: error.message || "An error occurred during generation" });
   }
 }
